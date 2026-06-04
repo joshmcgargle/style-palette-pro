@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRefreshRouteImport } from './routes/admin.refresh'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRefreshRoute = AdminRefreshRouteImport.update({
+  id: '/admin/refresh',
+  path: '/admin/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin/refresh': typeof AdminRefreshRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/refresh': typeof AdminRefreshRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin/refresh': typeof AdminRefreshRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/admin/refresh'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/admin/refresh'
+  id: '__root__' | '/' | '/admin/refresh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRefreshRoute: typeof AdminRefreshRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/refresh': {
+      id: '/admin/refresh'
+      path: '/admin/refresh'
+      fullPath: '/admin/refresh'
+      preLoaderRoute: typeof AdminRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRefreshRoute: AdminRefreshRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
