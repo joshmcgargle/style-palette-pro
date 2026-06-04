@@ -142,6 +142,7 @@ const SHOPS: Record<CatId, Shop[]> = {
 };
 
 type Product = { id: string; name: string; price: string; img: string; url: string };
+type ShopLink = { name: string; url: string };
 
 type Selected = Record<CatId, Product | null>;
 const emptySel: Selected = {
@@ -152,6 +153,10 @@ type SavedLook = { id: string; name: string; items: Selected; ts: number };
 
 const LS_LOOKS = "dressed.looks.v1";
 const LS_THEME = "dressed.theme.v1";
+
+function getShopUrl(cat: CatId, shop: string) {
+  return SHOPS[cat].find((s) => s.name === shop)?.url ?? "";
+}
 
 export function OutfitDesigner() {
   const scrape = useServerFn(scrapeShop);
@@ -183,24 +188,40 @@ export function OutfitDesigner() {
   useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(LS_LOOKS, JSON.stringify(looks)); }, [looks]);
 
   const shop = shopByCat[cat];
+  const shopUrl = getShopUrl(cat, shop);
+  const fallbackLinks: ShopLink[] = [
+    { name: `Open ${shop}`, url: shopUrl },
+    ...SHOPS[cat].filter((s) => s.name !== shop).slice(0, 5),
+  ].filter((s) => s.url);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "";
+    const shopUrl = getShopUrl(cat, shop);
     if (!shopUrl) { setProducts([]); setLoading(false); return; }
+    const timeout = window.setTimeout(() => {
+      if (cancelled) return;
+      setProducts([]);
+      setError(null);
+      setLoading(false);
+    }, 12000);
     scrape({ data: { url: shopUrl, shop, cat } })
       .then((res) => {
         if (cancelled) return;
+        window.clearTimeout(timeout);
         setProducts(res.products as Product[]);
         setLoading(false);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        window.clearTimeout(timeout);
+        console.warn("Shop scrape failed", e);
+        setError(null);
+        setProducts([]);
         setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; window.clearTimeout(timeout); };
   }, [cat, shop]);
 
   const currentCat = CATS.find((c) => c.id === cat)!;
@@ -305,10 +326,8 @@ export function OutfitDesigner() {
                       </div>
                     </div>
                   ))
-                : error
-                ? <div style={{ padding: 20, color: "var(--txt2)", fontSize: ".85em" }}>Couldn't load products: {error}</div>
-                : products.length === 0
-                ? <div style={{ padding: 20, color: "var(--txt2)", fontSize: ".85em" }}>No products found for this shop — try another tab.</div>
+                : error || products.length === 0
+                ? <ShopFallback links={fallbackLinks} />
                 : products.map((p) => {
                     const sel = selected[cat]?.id === p.id;
                     return (
@@ -373,6 +392,19 @@ export function OutfitDesigner() {
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
+
+function ShopFallback({ links }: { links: ShopLink[] }) {
+  return (
+    <div className="shop-fallback">
+      {links.map((link) => (
+        <a key={link.url} className="shop-fallback-card" href={link.url} target="_blank" rel="noreferrer">
+          <span>{link.name}</span>
+          <strong>Shop now ↗</strong>
+        </a>
+      ))}
     </div>
   );
 }
@@ -465,6 +497,11 @@ const CSS = `
 .dressed .pc-price{font-size:.82em;font-weight:700;color:var(--acc);}
 .dressed .pc-link{font-size:.68em;color:var(--g2);text-decoration:none;padding:3px 9px;border:1.5px solid var(--g2);border-radius:10px;transition:all .15s;font-weight:600;}
 .dressed .pc-link:hover{background:var(--g2);color:#fff;}
+.dressed .shop-fallback{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.dressed .shop-fallback-card{min-height:118px;padding:18px;border-radius:16px;background:linear-gradient(135deg,var(--card),var(--soft));border:2px solid var(--border);display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;color:var(--txt);box-shadow:0 2px 12px rgba(0,0,0,.06);transition:transform .2s,border-color .2s,box-shadow .2s;}
+.dressed .shop-fallback-card:hover{transform:translateY(-4px);border-color:var(--g2);box-shadow:0 12px 28px rgba(0,0,0,.1);}
+.dressed .shop-fallback-card span{font-family:'Playfair Display',Georgia,serif;font-size:1.12em;font-weight:700;}
+.dressed .shop-fallback-card strong{font-size:.78em;color:var(--acc);}
 .dressed .add-own{background:var(--card);border-radius:16px;border:2px dashed var(--border);padding:18px 20px;margin-bottom:18px;}
 .dressed .add-own-title{font-size:.82em;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
 .dressed .add-row{display:flex;gap:8px;flex-wrap:wrap;}
