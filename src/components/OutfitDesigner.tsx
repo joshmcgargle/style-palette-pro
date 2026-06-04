@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type CatId = "hair" | "jewelry" | "dress" | "top" | "bottom" | "shoes" | "bag";
 
@@ -255,7 +255,7 @@ export function OutfitDesigner() {
       id: `custom-${Date.now()}`,
       name: customName,
       price: "—",
-      img: img(PRODUCT_IMAGES[cat][0], Date.now()),
+      img: products[0]?.img ?? "",
       url: customUrl,
     };
     setSelected((s) => ({ ...s, [cat]: p }));
