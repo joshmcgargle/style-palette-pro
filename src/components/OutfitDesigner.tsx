@@ -396,6 +396,19 @@ export function OutfitDesigner() {
   );
 }
 
+function ShopFallback({ links }: { links: ShopLink[] }) {
+  return (
+    <div className="shop-fallback">
+      {links.map((link) => (
+        <a key={link.url} className="shop-fallback-card" href={link.url} target="_blank" rel="noreferrer">
+          <span>{link.name}</span>
+          <strong>Shop now ↗</strong>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function Flatlay({ selected }: { selected: Selected }) {
   const slot = (id: CatId, wide = false) => {
     const p = selected[id];
