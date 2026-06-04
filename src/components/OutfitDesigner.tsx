@@ -339,6 +339,8 @@ export function OutfitDesigner() {
                       </div>
                     </div>
                   ))
+                : error
+                ? <div style={{ padding: 20, color: "var(--txt2)", fontSize: ".85em" }}>Couldn't load products: {error}</div>
                 : products.map((p) => {
                     const sel = selected[cat]?.id === p.id;
                     return (
