@@ -302,25 +302,23 @@ export function OutfitDesigner() {
               <div className="sec-sub">{currentCat.sub}</div>
             </div>
 
-            <div className="shop-scroll">
-              <div className="shop-row">
-                {SHOPS[cat].map((s) => (
-                  <button
-                    key={s.name}
-                    className={`shop-btn ${shopByCat[cat] === s.name ? "on" : ""}`}
-                    onClick={() => setShopByCat((x) => ({ ...x, [cat]: s.name }))}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
+            <div className="shop-row">
+              {SHOPS[cat].map((s) => (
+                <button
+                  key={s.name}
+                  className={`shop-btn ${shopByCat[cat] === s.name ? "on" : ""}`}
+                  onClick={() => setShopByCat((x) => ({ ...x, [cat]: s.name }))}
+                >
+                  {s.name}
+                </button>
+              ))}
             </div>
 
             <div className="prod-grid">
               {loading
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <div className="pc" key={i}>
-                      <div className="pc-img" style={{ background: "var(--soft)" }} />
+                      <div className="pc-img pc-skel" style={{ background: "var(--soft)" }} />
                       <div className="pc-info">
                         <span className="pc-name" style={{ background: "var(--soft)", color: "transparent" }}>—</span>
                       </div>
@@ -477,12 +475,13 @@ const CSS = `
 .dressed .sec-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
 .dressed .sec-title{font-family:'Playfair Display',Georgia,serif;font-size:1.55em;font-weight:700;color:var(--txt);}
 .dressed .sec-sub{font-size:.82em;color:var(--txt2);}
-.dressed .shop-scroll{overflow-x:auto;padding-bottom:8px;margin-bottom:16px;}
-.dressed .shop-row{display:flex;gap:7px;width:max-content;}
+.dressed .shop-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;}
 .dressed .shop-btn{padding:7px 18px;border-radius:22px;white-space:nowrap;border:1.5px solid var(--border);background:var(--card);font-family:inherit;font-size:.78em;font-weight:500;color:var(--txt);cursor:pointer;transition:all .15s;}
 .dressed .shop-btn:hover{background:var(--soft);border-color:var(--g2);}
 .dressed .shop-btn.on{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-color:transparent;box-shadow:0 2px 10px var(--glow);}
-.dressed .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
+.dressed .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:14px;margin-bottom:20px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+.dressed .pc-skel{animation:pulse 1.5s ease-in-out infinite;}
 .dressed .pc{border-radius:16px;overflow:hidden;cursor:pointer;background:var(--card);border:2px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.06);transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s,border-color .2s;position:relative;}
 .dressed .pc:hover{transform:translateY(-5px) scale(1.01);box-shadow:0 12px 32px rgba(0,0,0,.12);border-color:var(--g2);}
 .dressed .pc.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--g1),0 8px 24px rgba(0,0,0,.1);}

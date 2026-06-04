@@ -37,6 +37,19 @@ function normalizePrice(p: string | number | undefined): string {
   return String(p).trim();
 }
 
+function validateProductUrl(productUrl: string, fallback: string): string {
+  if (!productUrl) return fallback;
+  try {
+    const u = new URL(productUrl);
+    const path = u.pathname.toLowerCase();
+    if (/\.(jpe?g|png|webp|gif|svg|avif)(\?|$)/.test(path)) return fallback;
+    if (/(images?|media|cdn|static|assets)\./i.test(u.hostname)) return fallback;
+    return u.toString();
+  } catch {
+    return fallback;
+  }
+}
+
 export const scrapeShop = createServerFn({ method: "POST" })
   .inputValidator((data: { url: string; shop: string; cat: string }) => {
     if (!data?.url || !/^https?:\/\//i.test(data.url)) {
@@ -83,11 +96,17 @@ export const scrapeShop = createServerFn({ method: "POST" })
               type: "json",
               schema,
               prompt:
-                "Extract the first 18 product listings shown on this category page. For each item: product name, displayed price (with currency symbol), absolute product image URL, and absolute product page URL. Skip ads, banners, navigation, and editorial content.",
+                "Extract the first 24 product listings shown on this category page. For each item: product name, displayed price (with currency symbol), absolute product image URL, and absolute product page URL (the link to the product detail page, NOT the image URL). Skip ads, banners, navigation, and editorial content.",
             },
           ],
           onlyMainContent: true,
-          waitFor: 1500,
+          waitFor: 4000,
+          actions: [
+            { type: "scroll", direction: "down" },
+            { type: "wait", milliseconds: 1000 },
+            { type: "scroll", direction: "down" },
+            { type: "wait", milliseconds: 1000 },
+          ],
         }),
       });
       if (!res.ok) {
@@ -106,7 +125,8 @@ export const scrapeShop = createServerFn({ method: "POST" })
       .map((it, i) => {
         const name = (it.name ?? it.title ?? "").toString().trim();
         const img = absoluteUrl(it.image ?? it.img ?? it.image_url, data.url);
-        const url = absoluteUrl(it.url ?? it.link ?? it.product_url, data.url);
+        const rawUrl = absoluteUrl(it.url ?? it.link ?? it.product_url, data.url);
+        const url = validateProductUrl(rawUrl, data.url);
         return {
           id: `${data.cat}-${data.shop}-${i}`,
           name: name.slice(0, 80),
@@ -116,7 +136,7 @@ export const scrapeShop = createServerFn({ method: "POST" })
         };
       })
       .filter((p) => p.name && /^https?:\/\//i.test(p.img))
-      .slice(0, 12);
+      .slice(0, 24);
 
     return { products };
   });
