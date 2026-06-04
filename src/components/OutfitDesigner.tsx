@@ -154,6 +154,7 @@ const LS_LOOKS = "dressed.looks.v1";
 const LS_THEME = "dressed.theme.v1";
 
 export function OutfitDesigner() {
+  const scrape = useServerFn(scrapeShop);
   const [theme, setTheme] = useState<string>("th-default");
   const [cat, setCat] = useState<CatId>("dress");
   const [shopByCat, setShopByCat] = useState<Record<CatId, string>>(() => {
@@ -183,13 +184,23 @@ export function OutfitDesigner() {
 
   const shop = shopByCat[cat];
   useEffect(() => {
-    const ctrl = new AbortController();
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchProducts(cat, shop, ctrl.signal)
-      .then((p) => { setProducts(p); setLoading(false); })
-      .catch((e) => { if (e.name !== "AbortError") { setError(String(e.message ?? e)); setLoading(false); } });
-    return () => ctrl.abort();
+    const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "";
+    if (!shopUrl) { setProducts([]); setLoading(false); return; }
+    scrape({ data: { url: shopUrl, shop, cat } })
+      .then((res) => {
+        if (cancelled) return;
+        setProducts(res.products as Product[]);
+        setLoading(false);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : String(e));
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [cat, shop]);
 
   const currentCat = CATS.find((c) => c.id === cat)!;
