@@ -158,34 +158,85 @@ const PRODUCT_NAMES: Record<CatId, string[]> = {
   jewelry: ["Pearl Necklace", "Gold Hoops", "Charm Bracelet", "Stacked Rings", "Layered Chains", "Tennis Necklace"],
 };
 
-const SEARCH_TERMS: Record<CatId, string> = {
-  hair: "hair",
-  dress: "dress",
-  top: "blouse",
-  bottom: "trousers",
-  shoes: "shoes",
-  bag: "bag",
-  jewelry: "jewellery",
+// Search terms per category for each upstream free API.
+const SEARCH_TERMS: Record<CatId, { dummy: string; fake: string; platzi: string }> = {
+  hair:    { dummy: "hair",      fake: "",          platzi: "" },
+  dress:   { dummy: "dress",     fake: "",          platzi: "dress" },
+  top:     { dummy: "blouse",    fake: "shirt",     platzi: "shirt" },
+  bottom:  { dummy: "trousers",  fake: "jacket",    platzi: "pants" },
+  shoes:   { dummy: "shoes",     fake: "",          platzi: "shoes" },
+  bag:     { dummy: "bag",       fake: "backpack",  platzi: "bag" },
+  jewelry: { dummy: "jewellery", fake: "",          platzi: "" },
 };
 
-type DummyProduct = { id: number; title: string; price: number; thumbnail: string; images: string[] };
+type DummyProduct = { id: number; title: string; price: number; thumbnail: string; images?: string[] };
+type FakeProduct  = { id: number; title: string; price: number; image: string; category: string };
+type PlatziProduct = { id: number; title: string; price: number; images: string[] };
+
+async function safeJson<T>(url: string, signal: AbortSignal): Promise<T | null> {
+  try {
+    const res = await fetch(url, { signal });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+function cleanPlatziImg(raw: string): string {
+  // Platzi returns images that are sometimes wrapped like ["url"] inside a string.
+  if (!raw) return "";
+  const m = raw.match(/https?:\/\/[^"\]\s]+/);
+  return m ? m[0] : raw;
+}
 
 async function fetchProducts(cat: CatId, shop: string, signal: AbortSignal): Promise<Product[]> {
-  const q = SEARCH_TERMS[cat];
-  const res = await fetch(`https://dummyjson.com/products/search?q=${encodeURIComponent(q)}&limit=20`, { signal });
-  if (!res.ok) throw new Error(`Products API ${res.status}`);
-  const json = (await res.json()) as { products: DummyProduct[] };
+  const terms = SEARCH_TERMS[cat];
   const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "#";
-  // Stable per-shop ordering: rotate the list so each shop tab feels distinct.
-  const offset = shop.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % Math.max(json.products.length, 1);
-  const rotated = [...json.products.slice(offset), ...json.products.slice(0, offset)];
-  return rotated.slice(0, 12).map((p) => ({
-    id: `${cat}-${shop}-${p.id}`,
-    name: p.title,
-    price: `$${p.price.toFixed(0)}`,
-    img: p.thumbnail || p.images?.[0] || "",
-    url: shopUrl,
-  }));
+
+  const [dummy, fake, platzi] = await Promise.all([
+    terms.dummy
+      ? safeJson<{ products: DummyProduct[] }>(`https://dummyjson.com/products/search?q=${encodeURIComponent(terms.dummy)}&limit=20`, signal)
+      : Promise.resolve(null),
+    terms.fake
+      ? safeJson<FakeProduct[]>(`https://fakestoreapi.com/products/category/women's%20clothing`, signal)
+      : Promise.resolve(null),
+    terms.platzi
+      ? safeJson<PlatziProduct[]>(`https://api.escuelajs.co/api/v1/products/?title=${encodeURIComponent(terms.platzi)}&limit=20&offset=0`, signal)
+      : Promise.resolve(null),
+  ]);
+
+  const merged: Product[] = [];
+
+  if (dummy?.products) {
+    for (const p of dummy.products) {
+      const img = p.thumbnail || p.images?.[0] || "";
+      if (img) merged.push({ id: `dummy-${p.id}`, name: p.title, price: `$${p.price.toFixed(0)}`, img, url: shopUrl });
+    }
+  }
+  if (fake) {
+    for (const p of fake) {
+      if (p.image) merged.push({ id: `fake-${p.id}`, name: p.title, price: `$${p.price.toFixed(0)}`, img: p.image, url: shopUrl });
+    }
+  }
+  if (platzi) {
+    for (const p of platzi) {
+      const img = cleanPlatziImg(p.images?.[0] ?? "");
+      if (img && !/placeimg|placeholder/i.test(img)) {
+        merged.push({ id: `platzi-${p.id}`, name: p.title, price: `$${p.price.toFixed(0)}`, img, url: shopUrl });
+      }
+    }
+  }
+
+  if (merged.length === 0) {
+    throw new Error("No products returned from any provider");
+  }
+
+  // Stable per-shop ordering so each shop tab feels distinct.
+  const seed = shop.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const offset = seed % merged.length;
+  const rotated = [...merged.slice(offset), ...merged.slice(0, offset)];
+  return rotated.slice(0, 12).map((p) => ({ ...p, id: `${cat}-${shop}-${p.id}` }));
 }
 
 type Selected = Record<CatId, Product | null>;
