@@ -141,7 +141,7 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
 };
 
-type Product = { id: string; name: string; price: string; img: string; url: string };
+type Product = { id: string; name: string; price: string; img: string; url: string; shopUrl: string };
 type ShopLink = { name: string; url: string };
 
 type Selected = Record<CatId, Product | null>;
@@ -244,6 +244,7 @@ export function OutfitDesigner() {
       price: "—",
       img: products[0]?.img ?? "",
       url: customUrl,
+      shopUrl: customUrl,
     };
     setSelected((s) => ({ ...s, [cat]: p }));
     setCustomUrl(""); setCustomName("");
@@ -336,7 +337,10 @@ export function OutfitDesigner() {
                           <span className="pc-name">{p.name}</span>
                           <div className="pc-row">
                             <span className="pc-price">{p.price}</span>
-                            <a className="pc-link" href={p.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Shop ↗</a>
+                            <a className="pc-link" href={p.shopUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Shop ↗</a>
+                            {p.url && p.url !== p.shopUrl && (
+                              <a className="pc-link" href={p.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Item ↗</a>
+                            )}
                           </div>
                         </div>
                       </div>
