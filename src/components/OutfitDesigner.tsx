@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { scrapeShop } from "@/lib/scrape.functions";
 
 type CatId = "hair" | "jewelry" | "dress" | "top" | "bottom" | "shoes" | "bag";
 
@@ -27,217 +29,119 @@ type Shop = { name: string; url: string };
 
 const SHOPS: Record<CatId, Shop[]> = {
   hair: [
-    { name: "Sephora", url: "https://www.sephora.com/shop/hair" },
-    { name: "Ulta", url: "https://www.ulta.com/hair" },
-    { name: "Amazon", url: "https://www.amazon.com/s?k=hair+extensions" },
-    { name: "ASOS", url: "https://www.asos.com/us/women/accessories/hair-accessories/cat/?cid=6446" },
+    { name: "ASOS", url: "https://www.asos.com/women/accessories/hair-accessories/cat/?cid=11412" },
+    { name: "Boots", url: "https://www.boots.com/beauty/hair/hair-accessories" },
+    { name: "Look Fantastic", url: "https://www.lookfantastic.com/c/health-beauty/hair/tools-accessories/hair-accessories/" },
+    { name: "Sephora UK", url: "https://www.sephora.co.uk/hair/hair-accessories" },
+    { name: "Selfridges", url: "https://www.selfridges.com/GB/en/cat/womens/accessories/hair-accessories/" },
+    { name: "Superdrug", url: "https://www.superdrug.com/hair/hair-accessories/c/hair-access" },
+    { name: "Revolve", url: "https://www.revolve.com/beauty-hair-hair-tools-hair-accessories/br/3c7f75/" },
+    { name: "Urban Outfitters", url: "https://www.urbanoutfitters.com/hair-accessories-for-women" },
+    { name: "Etsy UK", url: "https://www.etsy.com/uk/c/accessories/hair-accessories" },
+    { name: "Hairburst", url: "https://www.hairburst.com/collections/shop-all" },
   ],
   dress: [
-    { name: "ASOS", url: "https://www.asos.com/us/women/dresses/cat/?cid=8799" },
-    { name: "Zara", url: "https://www.zara.com/us/en/woman-dresses-l1066.html" },
-    { name: "PrettyLittleThing", url: "https://www.prettylittlething.us/clothing-dresses.html" },
-    { name: "Oh Polly", url: "https://www.ohpolly.com/collections/dresses" },
-    { name: "Reformation", url: "https://www.thereformation.com/categories/dresses" },
-    { name: "Revolve", url: "https://www.revolve.com/dresses/br/a8e981/" },
-    { name: "Lulus", url: "https://www.lulus.com/categories/8/dresses.html" },
-    { name: "Princess Polly", url: "https://us.princesspolly.com/collections/dresses" },
+    { name: "ASOS", url: "https://www.asos.com/women/dresses/cat/?cid=8799" },
+    { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-dresses" },
+    { name: "Oh Polly", url: "https://www.ohpolly.com/collections/dresses-collection" },
+    { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-dresses-l1066.html" },
+    { name: "Revolve", url: "https://www.revolve.com/dresses/br/68fec2/" },
+    { name: "House of CB", url: "https://app.houseofcb.com/category?category_id=3" },
+    { name: "Nasty Gal", url: "https://www.nastygal.com/categories/womens-dresses" },
+    { name: "Boohoo", url: "https://www.boohoo.com/categories/womens-dresses" },
+    { name: "Shein UK", url: "https://www.shein.co.uk/Women-Dresses-c-1727.html" },
+    { name: "Net-a-Porter", url: "https://www.net-a-porter.com/en-gb/shop/clothing/dresses" },
+    { name: "Missguided", url: "https://www.missguided.com/category/Women-Dresses-12716" },
+    { name: "In The Style", url: "https://www.inthestyle.com/collections/dresses" },
+    { name: "Free People", url: "https://www.freepeople.com/dresses/" },
+    { name: "Reiss", url: "https://www.reiss.com/gb/en/shop/gender-women-category-dresses" },
+    { name: "Sabo Skirt", url: "https://us.saboskirt.com/collections/dresses" },
   ],
   top: [
-    { name: "Zara", url: "https://www.zara.com/us/en/woman-tshirts-l1362.html" },
-    { name: "ASOS", url: "https://www.asos.com/us/women/tops/cat/?cid=4169" },
-    { name: "H&M", url: "https://www2.hm.com/en_us/women/products/tops.html" },
-    { name: "Aritzia", url: "https://www.aritzia.com/us/en/clothing/tops" },
-    { name: "Princess Polly", url: "https://us.princesspolly.com/collections/tops" },
-    { name: "PrettyLittleThing", url: "https://www.prettylittlething.us/clothing-tops.html" },
+    { name: "ASOS", url: "https://www.asos.com/women/tops/cat/?cid=4169" },
+    { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-tops-l1322.html" },
+    { name: "H&M UK", url: "https://www2.hm.com/en_gb/ladies/shop-by-product/tops.html" },
+    { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-tops" },
+    { name: "Nasty Gal", url: "https://www.nastygal.com/womens/tops" },
+    { name: "Revolve", url: "https://www.revolve.com/tops/br/db773d/" },
+    { name: "Urban Outfitters", url: "https://www.urbanoutfitters.com/womens-tops" },
+    { name: "Monki", url: "https://www.monki.com/en/clothing/tops.html" },
+    { name: "Boohoo", url: "https://www.boohoo.com/categories/womens-tops" },
+    { name: "Shein UK", url: "https://www.shein.co.uk/Women-Tops-c-2223.html" },
+    { name: "Oh Polly", url: "https://www.ohpolly.com/collections/tops-collection" },
+    { name: "Weekday", url: "https://www.weekday.com/en-ww/women/t-shirts-and-tops/" },
+    { name: "Free People", url: "https://www.freepeople.com/tops/" },
+    { name: "Topshop", url: "https://www.topshop.com/gb/topshop/category/tops?cid=52788" },
   ],
   bottom: [
-    { name: "Levi's", url: "https://www.levi.com/US/en_US/category/women/clothing/jeans" },
-    { name: "ASOS", url: "https://www.asos.com/us/women/jeans/cat/?cid=3630" },
-    { name: "Madewell", url: "https://www.madewell.com/womens/clothing/denim" },
-    { name: "Free People", url: "https://www.freepeople.com/women-bottoms/" },
-    { name: "Abercrombie", url: "https://www.abercrombie.com/shop/us/womens-bottoms" },
-    { name: "Zara", url: "https://www.zara.com/us/en/woman-jeans-l1119.html" },
+    { name: "ASOS", url: "https://www.asos.com/women/skirts/cat/?cid=2639" },
+    { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-skirts-l1299.html" },
+    { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-bottoms" },
+    { name: "H&M UK", url: "https://www2.hm.com/en_gb/ladies/shop-by-product/skirts.html" },
+    { name: "Nasty Gal", url: "https://www.nastygal.com/categories/womens-skirts-mini-skirts" },
+    { name: "Revolve", url: "https://www.revolve.com/skirts/br/8b6a66/" },
+    { name: "Urban Outfitters", url: "https://www.urbanoutfitters.com/skirts" },
+    { name: "Monki", url: "https://www.monki.com/en/clothing/skirts.html" },
+    { name: "Boohoo", url: "https://www.boohoo.com/categories/womens-skirts" },
+    { name: "Shein UK", url: "https://www.shein.co.uk/Women-Skirts-c-1732.html" },
+    { name: "Oh Polly", url: "https://us.ohpolly.com/collections/skirts" },
+    { name: "Topshop", url: "https://www.topshop.com/gb/topshop/category/skirts?cid=52793" },
+    { name: "Free People", url: "https://www.freepeople.com/skirts/" },
+    { name: "Weekday", url: "https://www.weekday.com/en-ww/women/skirts/" },
   ],
   shoes: [
-    { name: "Nike", url: "https://www.nike.com/w/womens-shoes-5e1x6zy7ok" },
-    { name: "Steve Madden", url: "https://www.stevemadden.com/collections/all-shoes" },
-    { name: "ASOS", url: "https://www.asos.com/us/women/shoes/cat/?cid=4172" },
-    { name: "DSW", url: "https://www.dsw.com/en/us/category/womens-shoes/N-1z141fr" },
-    { name: "Sam Edelman", url: "https://www.samedelman.com" },
+    { name: "ASOS", url: "https://www.asos.com/women/shoes/cat/?cid=4172" },
+    { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-shoes-l1251.html" },
+    { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-shoes" },
+    { name: "Kurt Geiger", url: "https://www.kurtgeiger.com/women/shoes" },
+    { name: "Office", url: "https://www.office.co.uk/womens" },
+    { name: "Schuh", url: "https://www.schuh.co.uk/womens/" },
+    { name: "Steve Madden", url: "https://www.stevemadden.com/collections/womens-heels" },
+    { name: "Public Desire", url: "https://www.publicdesire.com/collections/all-footwear" },
+    { name: "Dune London", url: "https://www.dunelondon.com/gb/en/womens-shoes/" },
+    { name: "UGG", url: "https://www.ugg.com/women-boots/" },
+    { name: "Revolve", url: "https://www.revolve.com/shoes/br/3f40a9/" },
+    { name: "Nasty Gal", url: "https://www.nastygal.com/categories/womens-shoes" },
+    { name: "Jimmy Choo", url: "https://gb.jimmychoo.com/en/women/shoes/" },
+    { name: "Louboutin", url: "https://gb.christianlouboutin.com/gb_en/women/shoes/" },
+    { name: "New Look", url: "https://www.newlook.com/uk/womens/footwear/shoes/c/uk-womens-footwear-shoes" },
   ],
   bag: [
-    { name: "Coach", url: "https://www.coach.com/shop/women-bags" },
-    { name: "Telfar", url: "https://shop.telfar.net" },
-    { name: "Mansur Gavriel", url: "https://www.mansurgavriel.com" },
-    { name: "Nordstrom", url: "https://www.nordstrom.com/browse/women/handbags" },
-    { name: "ASOS", url: "https://www.asos.com/us/women/accessories/bags-purses/cat/?cid=8730" },
+    { name: "ASOS", url: "https://www.asos.com/women/bags-purses/cat/?cid=8730" },
+    { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-bags-l1024.html" },
+    { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-accessories-bags" },
+    { name: "Kurt Geiger", url: "https://www.kurtgeiger.com/women/bags" },
+    { name: "Selfridges", url: "https://www.selfridges.com/GB/en/cat/bags/womens/" },
+    { name: "Net-a-Porter", url: "https://www.net-a-porter.com/en-gb/shop/bags" },
+    { name: "Coach", url: "https://www.coach.com/shop/women/handbags/view-all" },
+    { name: "Loewe", url: "https://www.loewe.com/gbr/en/women/bags" },
+    { name: "Mulberry", url: "https://www.mulberry.com/gb/shop/women/bags" },
+    { name: "Revolve", url: "https://www.revolve.com/bags/br/52edf9/" },
+    { name: "Farfetch", url: "https://www.farfetch.com/shopping/women/bags-purses-1/items.aspx" },
+    { name: "Nasty Gal", url: "https://www.nastygal.com/categories/womens-accessories-bags" },
+    { name: "Gucci", url: "https://www.gucci.com/gb/en/ca/bags-for-women-c-women-bags" },
+    { name: "Prada", url: "https://www.prada.com/gb/en/womens/bags/c/10062UK" },
+    { name: "Mango", url: "https://shop.mango.com/gb/en/c/women/bags/8dff98e6" },
   ],
   jewelry: [
-    { name: "Mejuri", url: "https://mejuri.com" },
-    { name: "Catbird", url: "https://www.catbirdnyc.com" },
-    { name: "Missoma", url: "https://www.missoma.com" },
-    { name: "Brilliant Earth", url: "https://www.brilliantearth.com" },
-    { name: "Pandora", url: "https://us.pandora.net" },
+    { name: "ASOS", url: "https://www.asos.com/women/jewellery/cat/?cid=4175" },
+    { name: "Missoma", url: "https://www.missoma.com/collections/shop-all" },
+    { name: "Pandora UK", url: "https://uk.pandora.net/en/jewellery/" },
+    { name: "Astrid & Miyu", url: "https://www.astridandmiyu.com/collections/all-jewellery" },
+    { name: "Mejuri", url: "https://mejuri.com/collections/shop-all" },
+    { name: "Swarovski UK", url: "https://www.swarovski.com/en_GB-GB/c-01/Categories/Jewellery/" },
+    { name: "Monica Vinader", url: "https://www.monicavinader.com/gb/shop/jewellery" },
+    { name: "Etsy UK", url: "https://www.etsy.com/uk/c/jewelry" },
+    { name: "Lovisa", url: "https://www.lovisa.com/collections/shop-all-items" },
+    { name: "Wolf Circus", url: "https://www.wolfcircus.com/collections/all" },
+    { name: "Tatty Devine", url: "https://www.tattydevine.com/collections/view-all" },
+    { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-accessories-jewellery" },
+    { name: "Tiffany & Co", url: "https://www.tiffany.com/jewelry/" },
+    { name: "Gorjana", url: "https://www.gorjana.com/collections/shop-all" },
   ],
 };
 
 type Product = { id: string; name: string; price: string; img: string; url: string };
-
-// Curated product images per (category, shop). Uses Unsplash for visuals.
-const img = (q: string, seed: number) =>
-  `https://images.unsplash.com/photo-${q}?auto=format&fit=crop&w=400&h=400&q=70&sig=${seed}`;
-
-const PRODUCT_IMAGES: Record<CatId, string[]> = {
-  hair: [
-    "1605497788044-5a32c7078486",
-    "1522336572468-97b06e8ef143",
-    "1519699047748-de8e457a634e",
-    "1492106087820-71f1a00d2b11",
-    "1560869713-7d0a29430803",
-    "1595152772835-219674b2a8a6",
-  ],
-  dress: [
-    "1572804013427-4d7ca7268217",
-    "1566174053879-31528523f8ae",
-    "1539008835657-9e8e9680c956",
-    "1515372039744-b8f02a3ae446",
-    "1583496661160-fb5886a13d44",
-    "1496747611176-843222e1e57c",
-    "1568252542512-9fe8fe9c87bb",
-    "1595777457583-95e059d581b8",
-  ],
-  top: [
-    "1551488831-00ddcb6c6bd3",
-    "1591047139829-d91aecb6caea",
-    "1564257631407-4deb1f99d992",
-    "1583744946564-b52ac1c389c8",
-    "1503342217505-b0a15ec3261c",
-    "1556905055-8f358a7a47b2",
-  ],
-  bottom: [
-    "1541099649105-f69ad21f3246",
-    "1542272604-787c3835535d",
-    "1604176354204-9268737828e4",
-    "1582418702059-97ebafb35d09",
-    "1591195853828-11db59a44f6b",
-    "1594633312681-425c7b97ccd1",
-  ],
-  shoes: [
-    "1543163521-1bf539c55dd2",
-    "1542291026-7eec264c27ff",
-    "1549298916-b41d501d3772",
-    "1606107557195-0e29a4b5b4aa",
-    "1560769629-975ec94e6a86",
-    "1595950653106-6c9ebd614d3a",
-  ],
-  bag: [
-    "1584917865442-de89df76afd3",
-    "1548036328-c9fa89d128fa",
-    "1591561954557-26941169b49e",
-    "1559563458-527698bf5295",
-    "1566150905458-1bf1fc113f0d",
-    "1601369850814-87d7ec06fa07",
-  ],
-  jewelry: [
-    "1599643478518-a784e5dc4c8f",
-    "1535632066927-ab7c9ab60908",
-    "1611652022419-a9419f74343d",
-    "1602173574767-37ac01994b2a",
-    "1515562141207-7a88fb7ce338",
-    "1606760227091-3dd870d97f1d",
-  ],
-};
-
-const PRODUCT_NAMES: Record<CatId, string[]> = {
-  hair: ["Silky Extensions", "Wavy Clip-Ins", "Pearl Clip Set", "Satin Scrunchie", "Hair Bow", "Velvet Headband"],
-  dress: ["Slip Mini Dress", "Floral Midi", "Satin Gown", "Bodycon Mini", "Tiered Maxi", "Cocktail Dress", "Wrap Dress", "Corset Dress"],
-  top: ["Boxy Tee", "Puff Blouse", "Ribbed Tank", "Crop Top", "Silk Cami", "Knit Sweater"],
-  bottom: ["Straight Jeans", "Wide Leg Pants", "Mini Skirt", "Pleated Midi", "Tailored Shorts", "Cargo Pants"],
-  shoes: ["Strappy Heels", "Chunky Sneakers", "Ankle Boots", "Ballet Flats", "Platform Sandals", "Knee Boots"],
-  bag: ["Quilted Shoulder", "Mini Tote", "Beaded Clutch", "Crossbody Bag", "Bucket Bag", "Top Handle"],
-  jewelry: ["Pearl Necklace", "Gold Hoops", "Charm Bracelet", "Stacked Rings", "Layered Chains", "Tennis Necklace"],
-};
-
-// Search terms per category for each upstream free API.
-const SEARCH_TERMS: Record<CatId, { dummy: string; fake: string; platzi: string }> = {
-  hair:    { dummy: "hair",      fake: "",          platzi: "" },
-  dress:   { dummy: "dress",     fake: "",          platzi: "dress" },
-  top:     { dummy: "blouse",    fake: "shirt",     platzi: "shirt" },
-  bottom:  { dummy: "trousers",  fake: "jacket",    platzi: "pants" },
-  shoes:   { dummy: "shoes",     fake: "",          platzi: "shoes" },
-  bag:     { dummy: "bag",       fake: "backpack",  platzi: "bag" },
-  jewelry: { dummy: "jewellery", fake: "",          platzi: "" },
-};
-
-type DummyProduct = { id: number; title: string; price: number; thumbnail: string; images?: string[] };
-type FakeProduct  = { id: number; title: string; price: number; image: string; category: string };
-type PlatziProduct = { id: number; title: string; price: number; images: string[] };
-
-async function safeJson<T>(url: string, signal: AbortSignal): Promise<T | null> {
-  try {
-    const res = await fetch(url, { signal });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
-function cleanPlatziImg(raw: string): string {
-  // Platzi returns images that are sometimes wrapped like ["url"] inside a string.
-  if (!raw) return "";
-  const m = raw.match(/https?:\/\/[^"\]\s]+/);
-  return m ? m[0] : raw;
-}
-
-async function fetchProducts(cat: CatId, shop: string, signal: AbortSignal): Promise<Product[]> {
-  const terms = SEARCH_TERMS[cat];
-  const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "#";
-
-  const [dummy, fake, platzi] = await Promise.all([
-    terms.dummy
-      ? safeJson<{ products: DummyProduct[] }>(`https://dummyjson.com/products/search?q=${encodeURIComponent(terms.dummy)}&limit=20`, signal)
-      : Promise.resolve(null),
-    terms.fake
-      ? safeJson<FakeProduct[]>(`https://fakestoreapi.com/products/category/women's%20clothing`, signal)
-      : Promise.resolve(null),
-    terms.platzi
-      ? safeJson<PlatziProduct[]>(`https://api.escuelajs.co/api/v1/products/?title=${encodeURIComponent(terms.platzi)}&limit=20&offset=0`, signal)
-      : Promise.resolve(null),
-  ]);
-
-  const merged: Product[] = [];
-
-  if (dummy?.products) {
-    for (const p of dummy.products) {
-      const img = p.thumbnail || p.images?.[0] || "";
-      if (img) merged.push({ id: `dummy-${p.id}`, name: p.title, price: `$${p.price.toFixed(0)}`, img, url: shopUrl });
-    }
-  }
-  if (fake) {
-    for (const p of fake) {
-      if (p.image) merged.push({ id: `fake-${p.id}`, name: p.title, price: `$${p.price.toFixed(0)}`, img: p.image, url: shopUrl });
-    }
-  }
-  if (platzi) {
-    for (const p of platzi) {
-      const img = cleanPlatziImg(p.images?.[0] ?? "");
-      if (img && !/placeimg|placeholder/i.test(img)) {
-        merged.push({ id: `platzi-${p.id}`, name: p.title, price: `$${p.price.toFixed(0)}`, img, url: shopUrl });
-      }
-    }
-  }
-
-  if (merged.length === 0) {
-    throw new Error("No products returned from any provider");
-  }
-
-  // Stable per-shop ordering so each shop tab feels distinct.
-  const seed = shop.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const offset = seed % merged.length;
-  const rotated = [...merged.slice(offset), ...merged.slice(0, offset)];
-  return rotated.slice(0, 12).map((p) => ({ ...p, id: `${cat}-${shop}-${p.id}` }));
-}
 
 type Selected = Record<CatId, Product | null>;
 const emptySel: Selected = {
@@ -250,6 +154,7 @@ const LS_LOOKS = "dressed.looks.v1";
 const LS_THEME = "dressed.theme.v1";
 
 export function OutfitDesigner() {
+  const scrape = useServerFn(scrapeShop);
   const [theme, setTheme] = useState<string>("th-default");
   const [cat, setCat] = useState<CatId>("dress");
   const [shopByCat, setShopByCat] = useState<Record<CatId, string>>(() => {
@@ -279,13 +184,23 @@ export function OutfitDesigner() {
 
   const shop = shopByCat[cat];
   useEffect(() => {
-    const ctrl = new AbortController();
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchProducts(cat, shop, ctrl.signal)
-      .then((p) => { setProducts(p); setLoading(false); })
-      .catch((e) => { if (e.name !== "AbortError") { setError(String(e.message ?? e)); setLoading(false); } });
-    return () => ctrl.abort();
+    const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "";
+    if (!shopUrl) { setProducts([]); setLoading(false); return; }
+    scrape({ data: { url: shopUrl, shop, cat } })
+      .then((res) => {
+        if (cancelled) return;
+        setProducts(res.products as Product[]);
+        setLoading(false);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : String(e));
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [cat, shop]);
 
   const currentCat = CATS.find((c) => c.id === cat)!;
