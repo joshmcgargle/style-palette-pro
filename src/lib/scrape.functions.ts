@@ -6,6 +6,7 @@ export type ScrapedProduct = {
   price: string;
   img: string;
   url: string;
+  shopUrl: string;
 };
 
 type FirecrawlExtract = {
@@ -50,6 +51,69 @@ function validateProductUrl(productUrl: string, fallback: string): string {
   }
 }
 
+function buildPageVariants(baseUrl: string): string[] {
+  const variants = new Set<string>([baseUrl]);
+  try {
+    const u = new URL(baseUrl);
+    const paramNames = ["page", "pageNumber", "pgno", "start"];
+    for (const name of paramNames) {
+      const v = new URL(u.toString());
+      v.searchParams.set(name, "2");
+      variants.add(v.toString());
+    }
+    // also try a hash-less +1 page-style suffix some shops use
+    const v2 = new URL(u.toString());
+    v2.searchParams.set("page", "3");
+    variants.add(v2.toString());
+  } catch {
+    // ignore
+  }
+  return Array.from(variants).slice(0, 5);
+}
+
+async function scrapeOnce(
+  pageUrl: string,
+  apiKey: string,
+  schema: unknown,
+): Promise<FirecrawlExtract> {
+  const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: pageUrl,
+      formats: [
+        {
+          type: "json",
+          schema,
+          prompt:
+            "Extract every product listing visible on this category page. For each item: product name, displayed price (with currency symbol), absolute product image URL, and absolute product page URL (the link to the product detail page, NOT the image URL). Skip ads, banners, navigation, and editorial content.",
+        },
+      ],
+      onlyMainContent: true,
+      waitFor: 4000,
+      actions: [
+        { type: "scroll", direction: "down" },
+        { type: "wait", milliseconds: 800 },
+        { type: "scroll", direction: "down" },
+        { type: "wait", milliseconds: 800 },
+        { type: "scroll", direction: "down" },
+        { type: "wait", milliseconds: 800 },
+        { type: "scroll", direction: "down" },
+        { type: "wait", milliseconds: 800 },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Firecrawl ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const payload: { data?: { json?: FirecrawlExtract }; json?: FirecrawlExtract } = await res.json();
+  return payload.data?.json ?? payload.json ?? {};
+}
+
 export const scrapeShop = createServerFn({ method: "POST" })
   .inputValidator((data: { url: string; shop: string; cat: string }) => {
     if (!data?.url || !/^https?:\/\//i.test(data.url)) {
@@ -81,62 +145,38 @@ export const scrapeShop = createServerFn({ method: "POST" })
       required: ["products"],
     } as const;
 
-    let payload: { success?: boolean; data?: { json?: FirecrawlExtract }; json?: FirecrawlExtract; error?: string };
-    try {
-      const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: data.url,
-          formats: [
-            {
-              type: "json",
-              schema,
-              prompt:
-                "Extract the first 24 product listings shown on this category page. For each item: product name, displayed price (with currency symbol), absolute product image URL, and absolute product page URL (the link to the product detail page, NOT the image URL). Skip ads, banners, navigation, and editorial content.",
-            },
-          ],
-          onlyMainContent: true,
-          waitFor: 4000,
-          actions: [
-            { type: "scroll", direction: "down" },
-            { type: "wait", milliseconds: 1000 },
-            { type: "scroll", direction: "down" },
-            { type: "wait", milliseconds: 1000 },
-          ],
-        }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Firecrawl ${res.status}: ${text.slice(0, 200)}`);
+    const pageUrls = buildPageVariants(data.url);
+    const results = await Promise.allSettled(
+      pageUrls.map((u) => scrapeOnce(u, apiKey, schema)),
+    );
+
+    const allItems: NonNullable<FirecrawlExtract["products"]> = [];
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.products) {
+        allItems.push(...r.value.products);
       }
-      payload = await res.json();
-    } catch (err) {
-      throw new Error(`Firecrawl scrape failed: ${(err as Error).message}`);
     }
 
-    const extract = payload.data?.json ?? payload.json ?? {};
-    const items = extract.products ?? [];
-
-    const products: ScrapedProduct[] = items
-      .map((it, i) => {
-        const name = (it.name ?? it.title ?? "").toString().trim();
-        const img = absoluteUrl(it.image ?? it.img ?? it.image_url, data.url);
-        const rawUrl = absoluteUrl(it.url ?? it.link ?? it.product_url, data.url);
-        const url = validateProductUrl(rawUrl, data.url);
-        return {
-          id: `${data.cat}-${data.shop}-${i}`,
-          name: name.slice(0, 80),
-          price: normalizePrice(it.price),
-          img,
-          url,
-        };
-      })
-      .filter((p) => p.name && /^https?:\/\//i.test(p.img))
-      .slice(0, 24);
+    const seen = new Set<string>();
+    const products: ScrapedProduct[] = [];
+    allItems.forEach((it, i) => {
+      const name = (it.name ?? it.title ?? "").toString().trim();
+      const img = absoluteUrl(it.image ?? it.img ?? it.image_url, data.url);
+      const rawUrl = absoluteUrl(it.url ?? it.link ?? it.product_url, data.url);
+      const url = validateProductUrl(rawUrl, data.url);
+      if (!name || !/^https?:\/\//i.test(img)) return;
+      const key = `${name.toLowerCase()}|${img}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      products.push({
+        id: `${data.cat}-${data.shop}-${i}`,
+        name: name.slice(0, 80),
+        price: normalizePrice(it.price),
+        img,
+        url,
+        shopUrl: data.url,
+      });
+    });
 
     return { products };
   });
