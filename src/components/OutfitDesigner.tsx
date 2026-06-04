@@ -142,6 +142,7 @@ const SHOPS: Record<CatId, Shop[]> = {
 };
 
 type Product = { id: string; name: string; price: string; img: string; url: string };
+type ShopLink = { name: string; url: string };
 
 type Selected = Record<CatId, Product | null>;
 const emptySel: Selected = {
@@ -152,6 +153,10 @@ type SavedLook = { id: string; name: string; items: Selected; ts: number };
 
 const LS_LOOKS = "dressed.looks.v1";
 const LS_THEME = "dressed.theme.v1";
+
+function getShopUrl(cat: CatId, shop: string) {
+  return SHOPS[cat].find((s) => s.name === shop)?.url ?? "";
+}
 
 export function OutfitDesigner() {
   const scrape = useServerFn(scrapeShop);
@@ -183,24 +188,40 @@ export function OutfitDesigner() {
   useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(LS_LOOKS, JSON.stringify(looks)); }, [looks]);
 
   const shop = shopByCat[cat];
+  const shopUrl = getShopUrl(cat, shop);
+  const fallbackLinks: ShopLink[] = [
+    { name: `Open ${shop}`, url: shopUrl },
+    ...SHOPS[cat].filter((s) => s.name !== shop).slice(0, 5),
+  ].filter((s) => s.url);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "";
+    const shopUrl = getShopUrl(cat, shop);
     if (!shopUrl) { setProducts([]); setLoading(false); return; }
+    const timeout = window.setTimeout(() => {
+      if (cancelled) return;
+      setProducts([]);
+      setError(null);
+      setLoading(false);
+    }, 12000);
     scrape({ data: { url: shopUrl, shop, cat } })
       .then((res) => {
         if (cancelled) return;
+        window.clearTimeout(timeout);
         setProducts(res.products as Product[]);
         setLoading(false);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        window.clearTimeout(timeout);
+        console.warn("Shop scrape failed", e);
+        setError(null);
+        setProducts([]);
         setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; window.clearTimeout(timeout); };
   }, [cat, shop]);
 
   const currentCat = CATS.find((c) => c.id === cat)!;
