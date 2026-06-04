@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { scrapeShop } from "@/lib/scrape.functions";
+import { getProducts } from "@/lib/products.functions";
 
 type CatId = "hair" | "jewelry" | "dress" | "top" | "bottom" | "shoes" | "bag";
 
@@ -159,7 +159,7 @@ function getShopUrl(cat: CatId, shop: string) {
 }
 
 export function OutfitDesigner() {
-  const scrape = useServerFn(scrapeShop);
+  const fetchProducts = useServerFn(getProducts);
   const [theme, setTheme] = useState<string>("th-default");
   const [cat, setCat] = useState<CatId>("dress");
   const [shopByCat, setShopByCat] = useState<Record<CatId, string>>(() => {
@@ -200,28 +200,24 @@ export function OutfitDesigner() {
     setError(null);
     const shopUrl = getShopUrl(cat, shop);
     if (!shopUrl) { setProducts([]); setLoading(false); return; }
-    const timeout = window.setTimeout(() => {
-      if (cancelled) return;
-      setProducts([]);
-      setError(null);
-      setLoading(false);
-    }, 12000);
-    scrape({ data: { url: shopUrl, shop, cat } })
+    fetchProducts({ data: { cat, shop } })
       .then((res) => {
         if (cancelled) return;
-        window.clearTimeout(timeout);
-        setProducts(res.products as Product[]);
+        setProducts(
+          res.products.map((p) => ({
+            id: p.id, name: p.name, price: p.price, img: p.img, url: p.url, shopUrl: p.shopUrl || shopUrl,
+          })),
+        );
         setLoading(false);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        window.clearTimeout(timeout);
-        console.warn("Shop scrape failed", e);
+        console.warn("Products fetch failed", e);
         setError(null);
         setProducts([]);
         setLoading(false);
       });
-    return () => { cancelled = true; window.clearTimeout(timeout); };
+    return () => { cancelled = true; };
   }, [cat, shop]);
 
   const currentCat = CATS.find((c) => c.id === cat)!;
