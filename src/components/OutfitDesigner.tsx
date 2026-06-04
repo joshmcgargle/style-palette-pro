@@ -302,25 +302,23 @@ export function OutfitDesigner() {
               <div className="sec-sub">{currentCat.sub}</div>
             </div>
 
-            <div className="shop-scroll">
-              <div className="shop-row">
-                {SHOPS[cat].map((s) => (
-                  <button
-                    key={s.name}
-                    className={`shop-btn ${shopByCat[cat] === s.name ? "on" : ""}`}
-                    onClick={() => setShopByCat((x) => ({ ...x, [cat]: s.name }))}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
+            <div className="shop-row">
+              {SHOPS[cat].map((s) => (
+                <button
+                  key={s.name}
+                  className={`shop-btn ${shopByCat[cat] === s.name ? "on" : ""}`}
+                  onClick={() => setShopByCat((x) => ({ ...x, [cat]: s.name }))}
+                >
+                  {s.name}
+                </button>
+              ))}
             </div>
 
             <div className="prod-grid">
               {loading
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <div className="pc" key={i}>
-                      <div className="pc-img" style={{ background: "var(--soft)" }} />
+                      <div className="pc-img pc-skel" style={{ background: "var(--soft)" }} />
                       <div className="pc-info">
                         <span className="pc-name" style={{ background: "var(--soft)", color: "transparent" }}>—</span>
                       </div>
