@@ -497,6 +497,11 @@ const CSS = `
 .dressed .pc-price{font-size:.82em;font-weight:700;color:var(--acc);}
 .dressed .pc-link{font-size:.68em;color:var(--g2);text-decoration:none;padding:3px 9px;border:1.5px solid var(--g2);border-radius:10px;transition:all .15s;font-weight:600;}
 .dressed .pc-link:hover{background:var(--g2);color:#fff;}
+.dressed .shop-fallback{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.dressed .shop-fallback-card{min-height:118px;padding:18px;border-radius:16px;background:linear-gradient(135deg,var(--card),var(--soft));border:2px solid var(--border);display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;color:var(--txt);box-shadow:0 2px 12px rgba(0,0,0,.06);transition:transform .2s,border-color .2s,box-shadow .2s;}
+.dressed .shop-fallback-card:hover{transform:translateY(-4px);border-color:var(--g2);box-shadow:0 12px 28px rgba(0,0,0,.1);}
+.dressed .shop-fallback-card span{font-family:'Playfair Display',Georgia,serif;font-size:1.12em;font-weight:700;}
+.dressed .shop-fallback-card strong{font-size:.78em;color:var(--acc);}
 .dressed .add-own{background:var(--card);border-radius:16px;border:2px dashed var(--border);padding:18px 20px;margin-bottom:18px;}
 .dressed .add-own-title{font-size:.82em;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
 .dressed .add-row{display:flex;gap:8px;flex-wrap:wrap;}
