@@ -158,16 +158,33 @@ const PRODUCT_NAMES: Record<CatId, string[]> = {
   jewelry: ["Pearl Necklace", "Gold Hoops", "Charm Bracelet", "Stacked Rings", "Layered Chains", "Tennis Necklace"],
 };
 
-function buildProducts(cat: CatId, shop: string): Product[] {
-  const imgs = PRODUCT_IMAGES[cat];
-  const names = PRODUCT_NAMES[cat];
-  const seed = shop.length;
-  return imgs.map((p, i) => ({
-    id: `${cat}-${shop}-${i}`,
-    name: names[i % names.length],
-    price: `$${(19 + ((i * 13 + seed * 7) % 180)).toFixed(0)}`,
-    img: img(p, seed * 31 + i),
-    url: SHOPS[cat].find((s) => s.name === shop)?.url ?? "#",
+const SEARCH_TERMS: Record<CatId, string> = {
+  hair: "hair",
+  dress: "dress",
+  top: "blouse",
+  bottom: "trousers",
+  shoes: "shoes",
+  bag: "bag",
+  jewelry: "jewellery",
+};
+
+type DummyProduct = { id: number; title: string; price: number; thumbnail: string; images: string[] };
+
+async function fetchProducts(cat: CatId, shop: string, signal: AbortSignal): Promise<Product[]> {
+  const q = SEARCH_TERMS[cat];
+  const res = await fetch(`https://dummyjson.com/products/search?q=${encodeURIComponent(q)}&limit=20`, { signal });
+  if (!res.ok) throw new Error(`Products API ${res.status}`);
+  const json = (await res.json()) as { products: DummyProduct[] };
+  const shopUrl = SHOPS[cat].find((s) => s.name === shop)?.url ?? "#";
+  // Stable per-shop ordering: rotate the list so each shop tab feels distinct.
+  const offset = shop.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % Math.max(json.products.length, 1);
+  const rotated = [...json.products.slice(offset), ...json.products.slice(0, offset)];
+  return rotated.slice(0, 12).map((p) => ({
+    id: `${cat}-${shop}-${p.id}`,
+    name: p.title,
+    price: `$${p.price.toFixed(0)}`,
+    img: p.thumbnail || p.images?.[0] || "",
+    url: shopUrl,
   }));
 }
 
@@ -182,7 +199,7 @@ const LS_LOOKS = "dressed.looks.v1";
 const LS_THEME = "dressed.theme.v1";
 
 export function OutfitDesigner() {
-  const [theme, setTheme] = useState<string>(() => localStorage.getItem(LS_THEME) ?? "th-default");
+  const [theme, setTheme] = useState<string>("th-default");
   const [cat, setCat] = useState<CatId>("dress");
   const [shopByCat, setShopByCat] = useState<Record<CatId, string>>(() => {
     const init = {} as Record<CatId, string>;
@@ -190,23 +207,36 @@ export function OutfitDesigner() {
     return init;
   });
   const [selected, setSelected] = useState<Selected>(emptySel);
-  const [loading, setLoading] = useState(false);
-  const [looks, setLooks] = useState<SavedLook[]>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_LOOKS) ?? "[]"); } catch { return []; }
-  });
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [looks, setLooks] = useState<SavedLook[]>([]);
   const [customUrl, setCustomUrl] = useState("");
   const [customName, setCustomName] = useState("");
 
-  useEffect(() => { localStorage.setItem(LS_THEME, theme); }, [theme]);
-  useEffect(() => { localStorage.setItem(LS_LOOKS, JSON.stringify(looks)); }, [looks]);
-
+  // Hydrate from localStorage on the client only (SSR-safe).
   useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 350);
-    return () => clearTimeout(t);
-  }, [cat, shopByCat[cat]]);
+    const t = localStorage.getItem(LS_THEME);
+    if (t) setTheme(t);
+    try {
+      const l = JSON.parse(localStorage.getItem(LS_LOOKS) ?? "[]");
+      if (Array.isArray(l)) setLooks(l);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(LS_THEME, theme); }, [theme]);
+  useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(LS_LOOKS, JSON.stringify(looks)); }, [looks]);
 
-  const products = useMemo(() => buildProducts(cat, shopByCat[cat]), [cat, shopByCat]);
+  const shop = shopByCat[cat];
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setLoading(true);
+    setError(null);
+    fetchProducts(cat, shop, ctrl.signal)
+      .then((p) => { setProducts(p); setLoading(false); })
+      .catch((e) => { if (e.name !== "AbortError") { setError(String(e.message ?? e)); setLoading(false); } });
+    return () => ctrl.abort();
+  }, [cat, shop]);
+
   const currentCat = CATS.find((c) => c.id === cat)!;
 
   const pick = (p: Product) => setSelected((s) => ({ ...s, [cat]: s[cat]?.id === p.id ? null : p }));
