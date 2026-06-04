@@ -48,9 +48,6 @@ export const scrapeShop = createServerFn({ method: "POST" })
     const apiKey = process.env.FIRECRAWL_API_KEY;
     if (!apiKey) throw new Error("FIRECRAWL_API_KEY not configured");
 
-    const { default: Firecrawl } = await import("@mendable/firecrawl-js");
-    const fc = new Firecrawl({ apiKey });
-
     const schema = {
       type: "object",
       properties: {
@@ -71,26 +68,38 @@ export const scrapeShop = createServerFn({ method: "POST" })
       required: ["products"],
     } as const;
 
-    let result: unknown;
+    let payload: { success?: boolean; data?: { json?: FirecrawlExtract }; json?: FirecrawlExtract; error?: string };
     try {
-      result = await fc.scrape(data.url, {
-        formats: [
-          {
-            type: "json",
-            schema,
-            prompt:
-              "Extract the first 18 product listings shown on this category page. For each: product name, displayed price (with currency), absolute product image URL, and absolute product page URL. Skip ads, banners, and editorial content.",
-          },
-        ],
-        onlyMainContent: true,
-        waitFor: 1500,
+      const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: data.url,
+          formats: [
+            {
+              type: "json",
+              schema,
+              prompt:
+                "Extract the first 18 product listings shown on this category page. For each item: product name, displayed price (with currency symbol), absolute product image URL, and absolute product page URL. Skip ads, banners, navigation, and editorial content.",
+            },
+          ],
+          onlyMainContent: true,
+          waitFor: 1500,
+        }),
       });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Firecrawl ${res.status}: ${text.slice(0, 200)}`);
+      }
+      payload = await res.json();
     } catch (err) {
       throw new Error(`Firecrawl scrape failed: ${(err as Error).message}`);
     }
 
-    const r = result as { json?: FirecrawlExtract; data?: { json?: FirecrawlExtract } };
-    const extract = r.json ?? r.data?.json ?? {};
+    const extract = payload.data?.json ?? payload.json ?? {};
     const items = extract.products ?? [];
 
     const products: ScrapedProduct[] = items
