@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRefreshRouteImport } from './routes/admin.refresh'
+import { Route as ApiPublicAdminSeedShopRouteImport } from './routes/api.public.admin.seed-shop'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const AdminRefreshRoute = AdminRefreshRouteImport.update({
   path: '/admin/refresh',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAdminSeedShopRoute = ApiPublicAdminSeedShopRouteImport.update({
+  id: '/api/public/admin/seed-shop',
+  path: '/api/public/admin/seed-shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin/refresh': typeof AdminRefreshRoute
+  '/api/public/admin/seed-shop': typeof ApiPublicAdminSeedShopRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/refresh': typeof AdminRefreshRoute
+  '/api/public/admin/seed-shop': typeof ApiPublicAdminSeedShopRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin/refresh': typeof AdminRefreshRoute
+  '/api/public/admin/seed-shop': typeof ApiPublicAdminSeedShopRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin/refresh'
+  fullPaths: '/' | '/admin/refresh' | '/api/public/admin/seed-shop'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin/refresh'
-  id: '__root__' | '/' | '/admin/refresh'
+  to: '/' | '/admin/refresh' | '/api/public/admin/seed-shop'
+  id: '__root__' | '/' | '/admin/refresh' | '/api/public/admin/seed-shop'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRefreshRoute: typeof AdminRefreshRoute
+  ApiPublicAdminSeedShopRoute: typeof ApiPublicAdminSeedShopRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/admin/seed-shop': {
+      id: '/api/public/admin/seed-shop'
+      path: '/api/public/admin/seed-shop'
+      fullPath: '/api/public/admin/seed-shop'
+      preLoaderRoute: typeof ApiPublicAdminSeedShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRefreshRoute: AdminRefreshRoute,
+  ApiPublicAdminSeedShopRoute: ApiPublicAdminSeedShopRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
