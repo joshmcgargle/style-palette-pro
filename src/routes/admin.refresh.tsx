@@ -9,6 +9,7 @@ type Shop = { name: string; url: string };
 const SHOPS: Record<CatId, Shop[]> = {
   hair: [
     { name: "ASOS", url: "https://www.asos.com/women/accessories/hair-accessories/cat/?cid=11412" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/accessories/hair-accessories/cat/?cid=11412&sort=freshness" },
     { name: "Boots", url: "https://www.boots.com/beauty/hair/hair-accessories" },
     { name: "Look Fantastic", url: "https://www.lookfantastic.com/c/health-beauty/hair/tools-accessories/hair-accessories/" },
     { name: "Sephora UK", url: "https://www.sephora.co.uk/hair/hair-accessories" },
@@ -21,7 +22,9 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
   dress: [
     { name: "ASOS", url: "https://www.asos.com/women/dresses/cat/?cid=8799" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/dresses/cat/?cid=8799&sort=freshness" },
     { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-dresses" },
+    { name: "PLT Bestsellers", url: "https://www.prettylittlething.com/best-sellers" },
     { name: "Oh Polly", url: "https://www.ohpolly.com/collections/dresses-collection" },
     { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-dresses-l1066.html" },
     { name: "Revolve", url: "https://www.revolve.com/dresses/br/68fec2/" },
@@ -38,6 +41,7 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
   top: [
     { name: "ASOS", url: "https://www.asos.com/women/tops/cat/?cid=4169" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/tops/cat/?cid=4169&sort=freshness" },
     { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-tops-l1322.html" },
     { name: "H&M UK", url: "https://www2.hm.com/en_gb/ladies/shop-by-product/tops.html" },
     { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-tops" },
@@ -54,6 +58,7 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
   bottom: [
     { name: "ASOS", url: "https://www.asos.com/women/skirts/cat/?cid=2639" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/skirts/cat/?cid=2639&sort=freshness" },
     { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-skirts-l1299.html" },
     { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-bottoms" },
     { name: "H&M UK", url: "https://www2.hm.com/en_gb/ladies/shop-by-product/skirts.html" },
@@ -70,6 +75,7 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
   shoes: [
     { name: "ASOS", url: "https://www.asos.com/women/shoes/cat/?cid=4172" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/shoes/cat/?cid=4172&sort=freshness" },
     { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-shoes-l1251.html" },
     { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-shoes" },
     { name: "Kurt Geiger", url: "https://www.kurtgeiger.com/women/shoes" },
@@ -87,6 +93,7 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
   bag: [
     { name: "ASOS", url: "https://www.asos.com/women/bags-purses/cat/?cid=8730" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/bags-purses/cat/?cid=8730&sort=freshness" },
     { name: "Zara UK", url: "https://www.zara.com/uk/en/woman-bags-l1024.html" },
     { name: "PLT", url: "https://www.prettylittlething.com/categories/womens-accessories-bags" },
     { name: "Kurt Geiger", url: "https://www.kurtgeiger.com/women/bags" },
@@ -104,7 +111,9 @@ const SHOPS: Record<CatId, Shop[]> = {
   ],
   jewelry: [
     { name: "ASOS", url: "https://www.asos.com/women/jewellery/cat/?cid=4175" },
+    { name: "ASOS Bestsellers", url: "https://www.asos.com/women/jewellery/cat/?cid=4175&sort=freshness" },
     { name: "Missoma", url: "https://www.missoma.com/collections/shop-all" },
+    { name: "Missoma Bestsellers", url: "https://www.missoma.com/collections/bestsellers" },
     { name: "Pandora UK", url: "https://uk.pandora.net/en/jewellery/" },
     { name: "Astrid & Miyu", url: "https://www.astridandmiyu.com/collections/all-jewellery" },
     { name: "Mejuri", url: "https://mejuri.com/collections/shop-all" },
