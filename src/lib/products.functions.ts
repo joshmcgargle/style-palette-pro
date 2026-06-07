@@ -152,7 +152,9 @@ export const refreshShop = createServerFn({ method: "POST" })
       const rawUrl = absoluteUrl((it.url ?? it.link ?? it.product_url) as string | undefined, data.url);
       const url = validateProductUrl(rawUrl, data.url);
       if (!name || !/^https?:\/\//i.test(img)) continue;
-      const key = `${name.toLowerCase()}|${img}`;
+      // Dedupe by the same key as the DB onConflict target to avoid
+      // "ON CONFLICT DO UPDATE command cannot affect row a second time"
+      const key = `${data.cat}|${data.shop}|${img}`;
       if (seen.has(key)) continue;
       seen.add(key);
       rows.push({
